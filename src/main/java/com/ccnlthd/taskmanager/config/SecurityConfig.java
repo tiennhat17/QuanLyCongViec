@@ -1,23 +1,48 @@
 package com.ccnlthd.taskmanager.config;
 
+import jakarta.servlet.DispatcherType;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 
 @Configuration
 public class SecurityConfig {
 
+	public static String homeFor(Authentication auth) {
+		boolean admin = auth.getAuthorities().stream()
+				.anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
+		return admin ? "/admin" : "/tasks";
+	}
+
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		return http
-				.csrf(AbstractHttpConfigurer::disable)
 				.authorizeHttpRequests(requests -> requests
-						.requestMatchers("/api/hello", "/actuator/health").permitAll()
+						.dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.ERROR).permitAll()
+						.requestMatchers(
+							"/api/hello", 
+							"/actuator/health", 
+							"/login", 
+							"/register", 
+							"/403",
+							"/error",
+                            "/css/**", 
+							"/js/**", 
+							"/images/**").permitAll()
+						.requestMatchers("/admin", "/admin/**").hasRole("ADMIN")
+						.requestMatchers("/tasks", "/tasks/**").hasRole("USER")
 						.anyRequest().authenticated())
-				.httpBasic(Customizer.withDefaults())
+				// POST /login is handled by AuthController, so form login is not used
+				.logout(logout -> logout
+						.logoutUrl("/logout")
+						.logoutSuccessUrl("/login?logout"))
+				.exceptionHandling(ex -> ex
+						.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
+						.accessDeniedPage("/403"))
 				.build();
 	}
 }
