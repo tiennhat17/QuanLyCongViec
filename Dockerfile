@@ -8,7 +8,7 @@ RUN ./mvnw -B clean package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY --from=build /workspace/target/task-manager-api-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /workspace/target/task-manager-api-0.0.1-SNAPSHOT.war app.war
 USER 10001
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+ENTRYPOINT ["java", "-jar", "/app/app.war"]
