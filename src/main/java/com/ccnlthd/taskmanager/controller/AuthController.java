@@ -38,10 +38,12 @@ public class AuthController {
     @GetMapping("/login")
     public String loginForm(@RequestParam(required = false) String error,
                             @RequestParam(required = false) String logout,
+                            @RequestParam(required = false) String locked,
                             Authentication auth, Model m) {
         if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken))
             return "redirect:" + SecurityConfig.homeFor(auth);
         if (error != null) m.addAttribute("error", "Sai tên đăng nhập hoặc mật khẩu");
+        if (locked != null) m.addAttribute("error", "Tài khoản đã bị khóa");
         if (logout != null) m.addAttribute("msg", "Đã đăng xuất");
         return "login";
     }
@@ -72,21 +74,20 @@ public class AuthController {
     @GetMapping("/tasks")
     public String tasks() { return "tasks"; }
 
-    @GetMapping("/admin")
-    public String admin() { return "admin"; }
-
     @GetMapping("/register")
     public String registerForm() { return "register"; }
 
     @PostMapping("/register")
     public String register(@RequestParam String username, @RequestParam String email, @RequestParam String password,
-                           @RequestParam String confirm, Model m, RedirectAttributes ra) {
+                           @RequestParam String confirm,
+                           @RequestParam(defaultValue = "0") int clientTimezoneOffset,
+                           Model m, RedirectAttributes ra) {
         try {
             if (username.isBlank() || username.length() > 50) throw new IllegalArgumentException("Tên đăng nhập 1–50 ký tự");
             if (!email.trim().matches(EMAIL)) throw new IllegalArgumentException("Email không hợp lệ");
             if (password.length() < 6) throw new IllegalArgumentException("Mật khẩu tối thiểu 6 ký tự");
             if (!password.equals(confirm)) throw new IllegalArgumentException("Mật khẩu xác nhận không khớp");
-            service.register(username.trim(), email.trim(), password);
+            service.register(username.trim(), email.trim(), password, clientTimezoneOffset);
             ra.addFlashAttribute("msg", "Đăng ký thành công, hãy đăng nhập.");
             return "redirect:/login";
         } catch (IllegalArgumentException e) {

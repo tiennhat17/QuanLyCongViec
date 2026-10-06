@@ -35,4 +35,10 @@ Spring Boot does not load `.env` automatically. Compose reads it for container c
 
 ## Current scope
 
-This scaffold provides a smoke-test endpoint and local infrastructure only. The task, category, account, and authorization features remain to be implemented. The current HTTP Basic setup is temporary; replace it with the authentication design selected for the project before adding protected application APIs. `ddl-auto=update` is for local development and must not be used as a production schema-management strategy.
+The application currently includes account registration/login, role-based
+authorization, and the first ADMIN flow for viewing and searching users at
+`/admin/users`. The task, category, account-management actions, and dashboard
+features remain under development. User task counts are not shown yet because
+the `tasks` table and Task module have not been implemented. `ddl-auto=update`
+is for local development and must not be used as a production schema-management
+strategy.

@@ -6,6 +6,7 @@
 <title>Đăng ký – Personal Task Manager</title><link rel="stylesheet" href="${ctx}/css/style.css"></head>
 <body class="scroll"><div class="auth"><form class="card" method="post" action="${ctx}/register">
   <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">
+  <input type="hidden" name="clientTimezoneOffset" id="clientTimezoneOffset" value="0">
   <h2>Tạo tài khoản</h2><p class="sub">Bắt đầu sắp xếp công việc của bạn</p>
   <c:if test="${not empty error}"><div class="alert err"><c:out value="${error}"/></div></c:if>
   <label class="f">Tên đăng nhập</label>
@@ -18,4 +19,4 @@
   <input type="password" name="confirm" required>
   <button class="primary">Đăng ký</button>
   <p class="sw">Đã có tài khoản? <a href="${ctx}/login">Đăng nhập</a></p>
-</form></div></body></html>
+</form></div><script src="${ctx}/js/app.js"></script></body></html>

@@ -8,6 +8,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
+
+import com.ccnlthd.taskmanager.repository.UserRepository;
+import com.ccnlthd.taskmanager.security.LockedUserSessionFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -19,7 +23,7 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+	SecurityFilterChain securityFilterChain(HttpSecurity http, UserRepository userRepository) throws Exception {
 		return http
 				.authorizeHttpRequests(requests -> requests
 						.dispatcherTypeMatchers(DispatcherType.FORWARD, DispatcherType.ERROR).permitAll()
@@ -40,6 +44,7 @@ public class SecurityConfig {
 				.logout(logout -> logout
 						.logoutUrl("/logout")
 						.logoutSuccessUrl("/login?logout"))
+				.addFilterBefore(new LockedUserSessionFilter(userRepository), AuthorizationFilter.class)
 				.exceptionHandling(ex -> ex
 						.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
 						.accessDeniedPage("/403"))
