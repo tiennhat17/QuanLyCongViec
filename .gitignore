@@ -35,3 +35,30 @@ build/
 .env
 .env.*
 !.env.example
+
+### Build and runtime output ###
+/out/
+/bin/
+/logs/
+/log/
+*.log
+hs_err_pid*
+replay_pid*
+
+### Local tools and caches ###
+.cache/
+.mvn/timing.properties
+.flattened-pom.xml
+
+### Operating system ###
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+### Local databases ###
+*.db
+*.sqlite
+*.sqlite3
+
+### docs
+docs/

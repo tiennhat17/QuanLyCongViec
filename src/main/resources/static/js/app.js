@@ -3,9 +3,14 @@ const openM = m => m.classList.remove('hidden'), closeM = m => m.classList.add('
 
 // Menu tài khoản + đóng popup khi bấm ra ngoài
 const um = $('#userMenuTrigger'), am = $('#accountMenu');
-um.onclick = e => { e.stopPropagation(); am.classList.toggle('show'); };
-am.onclick = e => e.stopPropagation();
-document.addEventListener('click', () => { am.classList.remove('show'); $$('.context-menu').forEach(m => m.remove()); });
+if (um && am) {
+  um.onclick = e => { e.stopPropagation(); am.classList.toggle('show'); };
+  am.onclick = e => e.stopPropagation();
+}
+document.addEventListener('click', () => {
+  if (am) am.classList.remove('show');
+  $$('.context-menu').forEach(m => m.remove());
+});
 
 // Modal: bấm nền hoặc nút Hủy để đóng
 $$('.modal').forEach(m => {
@@ -14,9 +19,13 @@ $$('.modal').forEach(m => {
 });
 
 // Tìm kiếm tức thời (lọc phía client như bản gốc)
-const filter = (input, sel) => $(input).oninput = e => {
-  const k = e.target.value.toLowerCase();
-  $$(sel).forEach(el => el.style.display = el.textContent.toLowerCase().includes(k) ? '' : 'none');
+const filter = (input, sel) => {
+  const field = $(input);
+  if (!field) return;
+  field.oninput = e => {
+    const k = e.target.value.toLowerCase();
+    $$(sel).forEach(el => el.style.display = el.textContent.toLowerCase().includes(k) ? '' : 'none');
+  };
 };
 filter('#categorySearch', '#categoryList li');
 filter('#taskSearch', '.task');
@@ -27,7 +36,10 @@ function openCat(action, title, name) {
   catForm.action = action; $('#catTitle').textContent = title; catName.value = name;
   openM(catModal); catName.focus();
 }
-$('#addCategory').onclick = () => openCat(ctx + '/categories', 'Thêm danh mục', '');
+const addCategory = $('#addCategory');
+if (addCategory && catForm && catName && catModal) {
+  addCategory.onclick = () => openCat(ctx + '/categories', 'Thêm danh mục', '');
+}
 $$('.category-more').forEach(b => b.onclick = e => {
   e.stopPropagation();
   $$('.context-menu').forEach(m => m.remove());
@@ -58,3 +70,38 @@ function openTask(t) {
 }
 if ($('#addTask')) $('#addTask').onclick = () => openTask(null);
 if ($('#editTask')) $('#editTask').onclick = e => openTask(e.currentTarget.dataset);
+
+const registerForm = document.querySelector('form[action$="/register"]');
+if (registerForm) {
+  const timezoneField = registerForm.querySelector('#clientTimezoneOffset');
+  if (timezoneField) timezoneField.value = new Date().getTimezoneOffset();
+}
+
+// Tương tác cơ bản cho trang quản trị
+if (document.body.classList.contains('admin-page')) {
+  $$('form[action*="/admin/users/"][action$="/status"]').forEach(form => {
+    form.addEventListener('submit', e => {
+      const button = form.querySelector('button[type="submit"]');
+      const isLocking = form.querySelector('input[name="enabled"][value="false"]');
+      const message = isLocking ? 'Bạn có chắc muốn khóa tài khoản này?' : 'Bạn có chắc muốn mở khóa tài khoản này?';
+
+      if (!window.confirm(message)) {
+        e.preventDefault();
+        return;
+      }
+
+      if (button) {
+        button.disabled = true;
+        button.textContent = 'Đang xử lý...';
+      }
+    });
+  });
+
+  $$('.admin-alert').forEach(alert => {
+    window.setTimeout(() => {
+      alert.style.opacity = '0';
+      alert.style.transition = 'opacity .3s ease';
+      window.setTimeout(() => alert.remove(), 300);
+    }, 5000);
+  });
+}

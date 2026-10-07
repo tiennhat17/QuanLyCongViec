@@ -2,8 +2,8 @@ package com.ccnlthd.taskmanager.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Entity @Table(name = "users")
 @Getter @Setter @NoArgsConstructor
@@ -28,8 +28,11 @@ public class User {
     @Column(nullable = false)
     private boolean status = true;
 
-    @CreationTimestamp
     private LocalDateTime createdAt;
+
+    public String getFormattedCreatedAt() {
+        return createdAt == null ? "" : createdAt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+    }
 
     public String getInitials() {
         String[] p = username.trim().split("\\s+");
@@ -37,4 +40,3 @@ public class User {
         return s.toUpperCase();
     }
 }
-
