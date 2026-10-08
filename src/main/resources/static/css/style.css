@@ -874,3 +874,60 @@ body.admin-page {
         padding:14px
     }
 }
+.account-page {
+    height:auto;
+    min-height:100vh;
+    overflow:auto;
+    padding:32px 20px
+}
+.account-shell {
+    width:min(820px,100%);
+    margin:0 auto
+}
+.account-back {
+    display:inline-block;
+    color:#aab6ce;
+    text-decoration:none;
+    margin-bottom:22px
+}
+.account-back:hover {
+    color:#fff
+}
+.account-heading {
+    margin-bottom:22px
+}
+.account-heading h1 {
+    font-size:26px;
+    margin-bottom:6px
+}
+.account-heading p {
+    color:#8893a8;
+    font-size:14px
+}
+.account-layout {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:16px;
+    align-items:start
+}
+.account-card {
+    width:auto;
+    margin:0
+}
+.account-card h2 {
+    font-size:18px
+}
+.account-card input {
+    margin:8px 0 12px
+}
+.account-card button.primary {
+    cursor:pointer
+}
+@media(max-width:700px) {
+    .account-layout {
+        grid-template-columns:1fr
+    }
+    .account-page {
+        padding:22px 14px
+    }
+}
