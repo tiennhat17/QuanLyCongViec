@@ -1,36 +1,32 @@
 package com.ccnlthd.taskmanager.controller;
 
-import java.util.List;
-
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ccnlthd.taskmanager.config.SecurityConfig;
-import com.ccnlthd.taskmanager.model.User;
+import com.ccnlthd.taskmanager.dto.LoginRequest;
+import com.ccnlthd.taskmanager.dto.RegisterRequest;
+import com.ccnlthd.taskmanager.service.AuthService;
 import com.ccnlthd.taskmanager.service.UserService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @Controller 
 @RequiredArgsConstructor 
 public class AuthController {
     private final UserService service;
-    private final SecurityContextRepository contextRepo = new HttpSessionSecurityContextRepository();
-    private static final String EMAIL = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$";
+    private final AuthService authService;
 
     @GetMapping("/")
     public String root() { return "redirect:/login"; }
@@ -49,21 +45,18 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public String login(@RequestParam String identity, @RequestParam String password,
+    public String login(@Valid @ModelAttribute("loginRequest") LoginRequest request, BindingResult result,
                         HttpServletRequest req, HttpServletResponse res, Model m) {
+        m.addAttribute("identity", request.getIdentity());
+        if (result.hasErrors()) {
+            m.addAttribute("error", result.getAllErrors().get(0).getDefaultMessage());
+            return "login";
+        }
         try {
-            User u = service.login(identity.trim(), password);
-            Authentication auth = UsernamePasswordAuthenticationToken.authenticated(
-                    u.getUsername(), null, List.of(new SimpleGrantedAuthority("ROLE_" + u.getRole().name())));
-            if (req.getSession(false) != null) req.changeSessionId(); // chống session fixation
-            SecurityContext ctx = SecurityContextHolder.createEmptyContext();
-            ctx.setAuthentication(auth);
-            SecurityContextHolder.setContext(ctx);
-            contextRepo.saveContext(ctx, req, res);
+            Authentication auth = authService.login(request, req, res);
             return "redirect:" + SecurityConfig.homeFor(auth);
         } catch (IllegalArgumentException e) {
             m.addAttribute("error", e.getMessage());
-            m.addAttribute("identity", identity);
             return "login";
         }
     }
@@ -78,22 +71,21 @@ public class AuthController {
     public String registerForm() { return "register"; }
 
     @PostMapping("/register")
-    public String register(@RequestParam String username, @RequestParam String email, @RequestParam String password,
-                           @RequestParam String confirm,
-                           @RequestParam(defaultValue = "0") int clientTimezoneOffset,
+    public String register(@Valid @ModelAttribute("registerRequest") RegisterRequest request, BindingResult result,
                            Model m, RedirectAttributes ra) {
+        m.addAttribute("username", request.getUsername());
+        m.addAttribute("email", request.getEmail());
+        if (result.hasErrors()) {
+            m.addAttribute("error", result.getAllErrors().get(0).getDefaultMessage());
+            return "register";
+        }
         try {
-            if (username.isBlank() || username.length() > 50) throw new IllegalArgumentException("Tên đăng nhập 1–50 ký tự");
-            if (!email.trim().matches(EMAIL)) throw new IllegalArgumentException("Email không hợp lệ");
-            if (password.length() < 6) throw new IllegalArgumentException("Mật khẩu tối thiểu 6 ký tự");
-            if (!password.equals(confirm)) throw new IllegalArgumentException("Mật khẩu xác nhận không khớp");
-            service.register(username.trim(), email.trim(), password, clientTimezoneOffset);
+            service.register(request.getUsername(), request.getEmail(), request.getPassword(),
+                    request.getClientTimezoneOffset());
             ra.addFlashAttribute("msg", "Đăng ký thành công, hãy đăng nhập.");
             return "redirect:/login";
         } catch (IllegalArgumentException e) {
             m.addAttribute("error", e.getMessage());
-            m.addAttribute("username", username);
-            m.addAttribute("email", email);
             return "register";
         }
     }
