@@ -80,4 +80,53 @@ public class UserService {
         }
         target.setStatus(enabled);
     }
+
+    @Transactional(readOnly = true)
+    public User getAccount(String username) {
+        return users.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản"));
+    }
+
+    @Transactional
+    public User updateProfile(String currentUsername, String username, String email) {
+        User account = getAccount(currentUsername);
+        String normalizedUsername = username == null ? "" : username.trim();
+        String normalizedEmail = email == null ? "" : email.trim();
+        if (normalizedUsername.isBlank() || normalizedUsername.length() > 50) {
+            throw new IllegalArgumentException("Tên đăng nhập phải từ 1 đến 50 ký tự");
+        }
+        if (normalizedEmail.length() > 100 || !normalizedEmail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")) {
+            throw new IllegalArgumentException("Email không hợp lệ");
+        }
+        if (users.findByUsername(normalizedUsername)
+                .filter(existing -> !existing.getId().equals(account.getId())).isPresent()) {
+            throw new IllegalArgumentException("Tên đăng nhập đã tồn tại");
+        }
+        if (users.findByEmail(normalizedEmail)
+                .filter(existing -> !existing.getId().equals(account.getId())).isPresent()) {
+            throw new IllegalArgumentException("Email đã được sử dụng");
+        }
+        account.setUsername(normalizedUsername);
+        account.setEmail(normalizedEmail);
+        return account;
+    }
+
+    @Transactional
+    public void changePassword(String username, String currentPassword, String newPassword,
+                               String confirmPassword) {
+        User account = getAccount(username);
+        if (currentPassword == null || !encoder.matches(currentPassword, account.getPassword())) {
+            throw new IllegalArgumentException("Mật khẩu hiện tại không chính xác");
+        }
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new IllegalArgumentException("Mật khẩu mới tối thiểu 6 ký tự");
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            throw new IllegalArgumentException("Mật khẩu xác nhận không khớp");
+        }
+        if (encoder.matches(newPassword, account.getPassword())) {
+            throw new IllegalArgumentException("Mật khẩu mới phải khác mật khẩu hiện tại");
+        }
+        account.setPassword(encoder.encode(newPassword));
+    }
 }

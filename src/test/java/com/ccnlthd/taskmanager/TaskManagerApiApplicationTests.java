@@ -201,4 +201,51 @@ class TaskManagerApiApplicationTests {
 						.redirectedUrl("/login?locked"));
 	}
 
+	@Test
+	void userCanViewAndUpdateTheirAccountProfile() throws Exception {
+		User account = new User();
+		account.setUsername("profile-user");
+		account.setEmail("profile@example.com");
+		account.setPassword(passwordEncoder.encode("old-password"));
+		account.setRole(User.Role.USER);
+		userRepository.save(account);
+
+		mockMvc.perform(get("/account").with(user("profile-user").roles("USER")))
+				.andExpect(status().isOk())
+				.andExpect(view().name("account"))
+				.andExpect(model().attributeExists("account"));
+
+		mockMvc.perform(post("/account/profile")
+				.param("username", "profile-updated")
+				.param("email", "updated@example.com")
+				.with(user("profile-user").roles("USER"))
+				.with(csrf()))
+				.andExpect(status().is3xxRedirection());
+
+		User updated = userRepository.findById(account.getId()).orElseThrow();
+		org.junit.jupiter.api.Assertions.assertEquals("profile-updated", updated.getUsername());
+		org.junit.jupiter.api.Assertions.assertEquals("updated@example.com", updated.getEmail());
+	}
+
+	@Test
+	void userCanChangeTheirPassword() throws Exception {
+		User account = new User();
+		account.setUsername("password-user");
+		account.setEmail("password@example.com");
+		account.setPassword(passwordEncoder.encode("old-password"));
+		account.setRole(User.Role.USER);
+		userRepository.save(account);
+
+		mockMvc.perform(post("/account/password")
+				.param("currentPassword", "old-password")
+				.param("newPassword", "new-password")
+				.param("confirmPassword", "new-password")
+				.with(user("password-user").roles("USER"))
+				.with(csrf()))
+				.andExpect(status().is3xxRedirection());
+
+		User updated = userRepository.findById(account.getId()).orElseThrow();
+		org.junit.jupiter.api.Assertions.assertTrue(passwordEncoder.matches("new-password", updated.getPassword()));
+	}
+
 }
