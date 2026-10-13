@@ -64,8 +64,6 @@ public class AuthController {
     @GetMapping("/403")
     public String forbidden() { return "403"; }
 
-    @GetMapping("/tasks")
-    public String tasks() { return "tasks"; }
 
     @GetMapping("/register")
     public String registerForm() { return "register"; }
