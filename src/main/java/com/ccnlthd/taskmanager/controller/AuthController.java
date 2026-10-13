@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ccnlthd.taskmanager.config.SecurityConfig;
-import com.ccnlthd.taskmanager.dto.LoginRequest;
-import com.ccnlthd.taskmanager.dto.RegisterRequest;
+import com.ccnlthd.taskmanager.dto.request.LoginRequest;
+import com.ccnlthd.taskmanager.dto.request.RegisterRequest;
 import com.ccnlthd.taskmanager.service.AuthService;
 import com.ccnlthd.taskmanager.service.UserService;
 

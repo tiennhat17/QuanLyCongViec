@@ -1,4 +1,4 @@
-package com.ccnlthd.taskmanager.dto;
+package com.ccnlthd.taskmanager.dto.request;
 
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;

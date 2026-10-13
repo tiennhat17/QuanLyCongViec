@@ -11,7 +11,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
 
-import com.ccnlthd.taskmanager.dto.LoginRequest;
+import com.ccnlthd.taskmanager.dto.request.LoginRequest;
 import com.ccnlthd.taskmanager.model.User;
 
 import jakarta.servlet.http.HttpServletRequest;
