@@ -7,10 +7,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import com.ccnlthd.taskmanager.model.User;
 import com.ccnlthd.taskmanager.model.User.Role;
 import com.ccnlthd.taskmanager.repository.UserRepository;
+import com.ccnlthd.taskmanager.repository.TaskRepository;
+import com.ccnlthd.taskmanager.repository.CategoryRepository;
+import com.ccnlthd.taskmanager.repository.UserTaskCount;
+import com.ccnlthd.taskmanager.dto.AdminUserDTO;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,6 +26,8 @@ import lombok.RequiredArgsConstructor;
 public class UserService {
     private final UserRepository users;
     private final PasswordEncoder encoder;
+    private final TaskRepository tasks;
+    private final CategoryRepository categories;
 
     @Transactional
     public User register(String username, String email, String password) {
@@ -60,10 +69,20 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public Page<User> findUsers(String search, Pageable pageable) {
+    public Page<AdminUserDTO> findUsers(String search, Pageable pageable) {
         String keyword = search == null ? "" : search.trim();
-        return users.findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(
+        Page<User> result = users.findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(
                 keyword, keyword, pageable);
+        List<Long> userIds = result.getContent().stream()
+                .map(User::getId)
+                .toList();
+        Map<Long, Long> counts = new HashMap<>();
+        if (!userIds.isEmpty()) {
+            for (UserTaskCount count : tasks.countByUserIds(userIds)) {
+                counts.put(count.getUserId(), count.getTaskCount());
+            }
+        }
+        return result.map(user -> new AdminUserDTO(user, counts.getOrDefault(user.getId(), 0L)));
     }
 
     @Transactional(readOnly = true)
@@ -71,8 +90,18 @@ public class UserService {
         long totalUsers = users.count();
         long activeUsers = users.countByStatus(true);
         long lockedUsers = users.countByStatus(false);
+        long totalTasks = tasks.count();
+        long completedTasks = tasks.countByStatus(com.ccnlthd.taskmanager.model.Task.Status.COMPLETED);
+        long pendingTasks = tasks.countByStatus(com.ccnlthd.taskmanager.model.Task.Status.TODO);
+        long overdueTasks = tasks.countByStatusAndDueDateBefore(
+                com.ccnlthd.taskmanager.model.Task.Status.TODO, java.time.LocalDate.now());
+        long totalCategories = categories.count();
+        List<AdminUserDTO> recentUsers = users.findTop5ByOrderByCreatedAtDesc().stream()
+                .map(user -> new AdminUserDTO(user, 0))
+                .toList();
         return new AdminUserStatistics(totalUsers, activeUsers, lockedUsers,
-                users.findTop5ByOrderByCreatedAtDesc());
+                recentUsers, totalTasks, completedTasks,
+                pendingTasks, overdueTasks, totalCategories);
     }
 
     @Transactional

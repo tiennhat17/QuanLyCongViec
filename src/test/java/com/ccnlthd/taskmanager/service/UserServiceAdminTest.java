@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,6 +24,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.ccnlthd.taskmanager.model.User;
 import com.ccnlthd.taskmanager.repository.UserRepository;
+import com.ccnlthd.taskmanager.repository.TaskRepository;
+import com.ccnlthd.taskmanager.repository.CategoryRepository;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceAdminTest {
@@ -32,6 +35,12 @@ class UserServiceAdminTest {
 
     @Mock
     private PasswordEncoder encoder;
+
+    @Mock
+    private TaskRepository tasks;
+
+    @Mock
+    private CategoryRepository categories;
 
     @InjectMocks
     private UserService service;
@@ -93,13 +102,26 @@ class UserServiceAdminTest {
         when(users.countByStatus(true)).thenReturn(9L);
         when(users.countByStatus(false)).thenReturn(3L);
         when(users.findTop5ByOrderByCreatedAtDesc()).thenReturn(java.util.List.of(recent));
+        when(tasks.count()).thenReturn(20L);
+        when(tasks.countByStatus(com.ccnlthd.taskmanager.model.Task.Status.COMPLETED)).thenReturn(8L);
+        when(tasks.countByStatus(com.ccnlthd.taskmanager.model.Task.Status.TODO)).thenReturn(12L);
+        when(tasks.countByStatusAndDueDateBefore(
+                eq(com.ccnlthd.taskmanager.model.Task.Status.TODO), any(java.time.LocalDate.class)))
+                .thenReturn(4L);
+        when(categories.count()).thenReturn(6L);
 
         AdminUserStatistics result = service.getAdminUserStatistics();
 
         assertEquals(12L, result.totalUsers());
         assertEquals(9L, result.activeUsers());
         assertEquals(3L, result.lockedUsers());
-        assertEquals(java.util.List.of(recent), result.recentUsers());
+        assertEquals("recent", result.recentUsers().get(0).getUsername());
+        assertEquals(20L, result.totalTasks());
+        assertEquals(8L, result.completedTasks());
+        assertEquals(12L, result.pendingTasks());
+        assertEquals(4L, result.overdueTasks());
+        assertEquals(6L, result.totalCategories());
+        assertEquals(40.0, result.completionRate());
         verify(users).count();
         verify(users).countByStatus(true);
         verify(users).countByStatus(false);
