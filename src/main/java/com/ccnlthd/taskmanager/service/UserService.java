@@ -55,6 +55,10 @@ public class UserService {
         return u;
     }
 
+    public User findByUsername(String username) {
+        return users.findByUsername(username).orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user"));
+    }
+
     @Transactional(readOnly = true)
     public Page<User> findUsers(String search, Pageable pageable) {
         String keyword = search == null ? "" : search.trim();
