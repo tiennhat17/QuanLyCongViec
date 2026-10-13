@@ -1,4 +1,4 @@
-package com.ccnlthd.taskmanager.dto;
+package com.ccnlthd.taskmanager.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
