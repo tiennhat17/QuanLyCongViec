@@ -28,10 +28,10 @@
                     <span>♙</span>
                     Quản trị người dùng
                 </a>
-                <span class="admin-menu-item">
+                <a class="admin-menu-item" href="${pageContext.request.contextPath}/admin/tasks">
                     <span>✓</span>
                     Thống kê công việc
-                </span>
+                </a>
             </nav>
             <form class="admin-logout" method="post" action="${pageContext.request.contextPath}/logout">
                 <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}">

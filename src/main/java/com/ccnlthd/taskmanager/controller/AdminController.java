@@ -29,6 +29,12 @@ public class AdminController {
         return "admin";
     }
 
+    @GetMapping("/admin/tasks")
+    public String taskStatistics(Model model) {
+        model.addAttribute("statistics", userService.getAdminUserStatistics());
+        return "admin-tasks";
+    }
+
     @GetMapping("/admin/users")
     public String users(@RequestParam(defaultValue = "") String search,
                         @RequestParam(defaultValue = "0") int page,

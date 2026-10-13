@@ -66,6 +66,19 @@ class AdminControllerTest {
     }
 
     @Test
+    void taskStatisticsAddsStatisticsToModel() {
+        AdminUserStatistics statistics = new AdminUserStatistics(12, 9, 3,
+                java.util.List.of());
+        when(userService.getAdminUserStatistics()).thenReturn(statistics);
+
+        ConcurrentModel model = new ConcurrentModel();
+
+        assertEquals("admin-tasks", controller.taskStatistics(model));
+        assertEquals(statistics, model.getAttribute("statistics"));
+        verify(userService).getAdminUserStatistics();
+    }
+
+    @Test
     void updateStatusAddsSuccessMessageAndPreservesSearchAndPage() {
         when(authentication.getName()).thenReturn("admin");
 
