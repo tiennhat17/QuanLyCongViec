@@ -34,7 +34,7 @@ public class AdminController {
                         @RequestParam(defaultValue = "0") int page,
                         Model model) {
         int pageNumber = Math.max(page, 0);
-        Page<com.ccnlthd.taskmanager.dto.AdminUserDTO> users = userService.findUsers(search,
+        Page<?> users = userService.findUsers(search,
                 PageRequest.of(pageNumber, USERS_PER_PAGE,
                         Sort.by(Sort.Direction.DESC, "createdAt")));
         model.addAttribute("users", users);

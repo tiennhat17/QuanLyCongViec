@@ -27,9 +27,10 @@
                     <span>♙</span>
                     Quản trị người dùng
                 </a>
-                <span class="admin-menu-item">
+                <span class="admin-menu-item disabled" aria-disabled="true">
                     <span>✓</span>
-                    Thống kê công việc
+                    Quản trị công việc
+                    <small>Sắp có</small>
                 </span>
             </nav>
             <form class="admin-logout" method="post" action="${pageContext.request.contextPath}/logout">
@@ -93,7 +94,7 @@
                                             <td class="${user.status ? 'active' : 'locked'}">
                                                 ${user.status ? 'Đang hoạt động' : 'Đã bị khóa'}
                                             </td>
-                                            <td><c:out value="${user.taskCount}"/></td>
+                                            <td class="admin-muted">Chưa có module Task</td>
                                             <td><c:out value="${user.formattedCreatedAt}"/></td>
                                             <td>
                                                 <form method="post" action="${pageContext.request.contextPath}/admin/users/${user.id}/status">
