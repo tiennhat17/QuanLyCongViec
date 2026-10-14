@@ -5,6 +5,8 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 @Entity @Table(name = "users")
 @Getter @Setter @NoArgsConstructor
 public class User {
@@ -28,6 +30,7 @@ public class User {
     @Column(nullable = false)
     private boolean status = true;
 
+    @CreationTimestamp
     private LocalDateTime createdAt;
 
     public String getFormattedCreatedAt() {
