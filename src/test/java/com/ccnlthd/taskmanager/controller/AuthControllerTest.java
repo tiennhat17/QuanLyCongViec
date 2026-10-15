@@ -164,7 +164,7 @@ class AuthControllerTest {
         ConcurrentModel m = new ConcurrentModel();
 
         assertEquals("register", controller.register(r, withError(r, "Email không hợp lệ"), m,
-                new RedirectAttributesModelMap()));
+                new RedirectAttributesModelMap(), new org.springframework.mock.web.MockHttpServletResponse()));
 
         assertEquals("Email không hợp lệ", m.getAttribute("error"));
         verify(userService, never()).register(any(), any(), any(), anyInt());
@@ -175,7 +175,8 @@ class AuthControllerTest {
         RegisterRequest r = register();
         RedirectAttributesModelMap ra = new RedirectAttributesModelMap();
 
-        assertEquals("redirect:/login", controller.register(r, noErrors(r), new ConcurrentModel(), ra));
+        assertEquals("redirect:/login", controller.register(r, noErrors(r), new ConcurrentModel(), ra,
+                new org.springframework.mock.web.MockHttpServletResponse()));
 
         verify(userService).register("an", "an@example.com", "secret1", 0);
         assertEquals("Đăng ký thành công, hãy đăng nhập.", ra.getFlashAttributes().get("msg"));
@@ -188,9 +189,11 @@ class AuthControllerTest {
                 .thenThrow(new IllegalArgumentException("Tên đăng nhập đã tồn tại"));
         ConcurrentModel m = new ConcurrentModel();
         RedirectAttributesModelMap ra = new RedirectAttributesModelMap();
+        org.springframework.mock.web.MockHttpServletResponse resp = new org.springframework.mock.web.MockHttpServletResponse();
 
-        assertEquals("register", controller.register(r, noErrors(r), m, ra));
+        assertEquals("register", controller.register(r, noErrors(r), m, ra, resp));
 
+        assertEquals(409, resp.getStatus());
         assertEquals("Tên đăng nhập đã tồn tại", m.getAttribute("error"));
         assertEquals("an", m.getAttribute("username"));
         assertNull(ra.getFlashAttributes().get("msg"));

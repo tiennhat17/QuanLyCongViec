@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AccountController {
     private final UserService userService;
-    private final SecurityContextRepository contextRepository = new HttpSessionSecurityContextRepository();
+    private final static SecurityContextRepository contextRepository = new HttpSessionSecurityContextRepository();
 
     @GetMapping("/account")
     public String account(Authentication authentication, Model model) {

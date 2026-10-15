@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthService {
     private final UserService userService;
-    private final SecurityContextRepository contextRepo = new HttpSessionSecurityContextRepository();
+    private final static SecurityContextRepository contextRepo = new HttpSessionSecurityContextRepository();
 
     /** Verifies credentials and establishes the authenticated security context in the session. */
     public Authentication login(LoginRequest request, HttpServletRequest req, HttpServletResponse res) {
