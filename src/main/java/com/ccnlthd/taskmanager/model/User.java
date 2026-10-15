@@ -7,6 +7,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 @Entity @Table(name = "users")
 @Getter @Setter @NoArgsConstructor
 public class User {
@@ -30,6 +32,7 @@ public class User {
     @Column(nullable = false)
     private boolean status = true;
 
+    @CreationTimestamp
     private LocalDateTime createdAt;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)

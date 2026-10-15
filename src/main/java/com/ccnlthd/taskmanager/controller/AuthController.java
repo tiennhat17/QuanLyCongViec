@@ -21,9 +21,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Controller 
 @RequiredArgsConstructor 
+@Slf4j
 public class AuthController {
     private final UserService service;
     private final AuthService authService;
@@ -70,10 +72,11 @@ public class AuthController {
 
     @PostMapping("/register")
     public String register(@Valid @ModelAttribute("registerRequest") RegisterRequest request, BindingResult result,
-                           Model m, RedirectAttributes ra) {
+                           Model m, RedirectAttributes ra, HttpServletResponse response) {
         m.addAttribute("username", request.getUsername());
         m.addAttribute("email", request.getEmail());
         if (result.hasErrors()) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             m.addAttribute("error", result.getAllErrors().get(0).getDefaultMessage());
             return "register";
         }
@@ -83,6 +86,11 @@ public class AuthController {
             ra.addFlashAttribute("msg", "Đăng ký thành công, hãy đăng nhập.");
             return "redirect:/login";
         } catch (IllegalArgumentException e) {
+            boolean duplicate = e.getMessage() != null
+                    && (e.getMessage().contains("đã tồn tại") || e.getMessage().contains("đã được sử dụng"));
+            int status = duplicate ? HttpServletResponse.SC_CONFLICT : HttpServletResponse.SC_BAD_REQUEST;
+            log.warn("Register failed ({}): {}", status, e.getMessage());
+            response.setStatus(status);
             m.addAttribute("error", e.getMessage());
             return "register";
         }
