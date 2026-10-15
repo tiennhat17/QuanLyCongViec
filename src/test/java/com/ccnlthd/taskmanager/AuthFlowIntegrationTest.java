@@ -84,19 +84,21 @@ class AuthFlowIntegrationTest {
         mockMvc.perform(post("/register").with(csrf())
                 .param("username", "an").param("email", "other@example.com")
                 .param("password", "secret1").param("confirm", "secret1"))
-                .andExpect(status().isOk())
+                .andExpect(status().isConflict())
                 .andExpect(view().name("register"))
                 .andExpect(model().attribute("error", "Tên đăng nhập đã tồn tại"));
 
         mockMvc.perform(post("/register").with(csrf())
                 .param("username", "b").param("email", "not-an-email")
                 .param("password", "secret1").param("confirm", "secret1"))
+                .andExpect(status().isBadRequest())
                 .andExpect(view().name("register"))
                 .andExpect(model().attributeExists("error"));
 
         mockMvc.perform(post("/register").with(csrf())
                 .param("username", "c").param("email", "c@example.com")
                 .param("password", "secret1").param("confirm", "different"))
+                .andExpect(status().isBadRequest())
                 .andExpect(view().name("register"))
                 .andExpect(model().attribute("error", "Mật khẩu xác nhận không khớp"));
 
