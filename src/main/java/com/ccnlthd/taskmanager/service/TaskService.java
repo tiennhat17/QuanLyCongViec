@@ -1,5 +1,6 @@
 package com.ccnlthd.taskmanager.service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import com.ccnlthd.taskmanager.model.Category;
 import com.ccnlthd.taskmanager.model.Task;
 import com.ccnlthd.taskmanager.model.User;
 import com.ccnlthd.taskmanager.repository.TaskRepository;
+import com.ccnlthd.taskmanager.repository.TaskStatisticsRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -17,13 +19,25 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor 
 public class TaskService {
     private final TaskRepository tasks;
+    private final TaskStatisticsRepository taskStatistics;
 
     public List<Task> findByUserIdAndCategoryIdOrderByDueDateAscIdAsc(Long userId, Long categoryId) {
         return tasks.findByUserIdAndCategoryIdOrderByDueDateAscIdAsc(userId, categoryId);
     }
 
     public long countByUserIdAndStatusAndDueDate(Long userId, Task.Status status, java.time.LocalDate dueDate) {
-        return tasks.countByUserIdAndStatusAndDueDate(userId, status, dueDate);
+        return taskStatistics.countByUserIdAndStatusAndDueDate(userId, status, dueDate);
+    }
+
+    @Transactional
+    public TaskStatistics getStatisticsForUser(Long userId) {
+        LocalDate today = LocalDate.now();
+        return new TaskStatistics(
+                taskStatistics.countByUserId(userId),
+                taskStatistics.countByUserIdAndStatus(userId, Task.Status.COMPLETED),
+                taskStatistics.countByUserIdAndStatus(userId, Task.Status.TODO),
+                taskStatistics.countByUserIdAndStatusAndDueDateBefore(userId, Task.Status.TODO, today),
+                taskStatistics.countByUserIdAndStatusAndDueDate(userId, Task.Status.TODO, today));
     }
 
     public Task findByIdAndUserId(Long taskId, Long userId) {

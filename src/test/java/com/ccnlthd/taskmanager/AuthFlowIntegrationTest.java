@@ -107,14 +107,15 @@ class AuthFlowIntegrationTest {
     // ---------- login ----------
 
     @Test
-    void registeredUserCanLoginAndReachTasksButNotAdmin() throws Exception {
+    void registeredUserCanLoginAndReachDashboardAndTasksButNotAdmin() throws Exception {
         register("an", "an@example.com", "secret1", "secret1");
 
         MockHttpSession session = (MockHttpSession) mockMvc.perform(post("/login").with(csrf())
                 .param("identity", "an").param("password", "secret1"))
-                .andExpect(redirectedUrl("/tasks"))
+                .andExpect(redirectedUrl("/dashboard"))
                 .andReturn().getRequest().getSession(false);
 
+        mockMvc.perform(get("/dashboard").session(session)).andExpect(status().isOk());
         mockMvc.perform(get("/tasks").session(session)).andExpect(status().isOk());
         mockMvc.perform(get("/admin").session(session)).andExpect(forwardedUrl("/403"));
     }

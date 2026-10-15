@@ -82,9 +82,9 @@ class AuthControllerTest {
     // ---------- homeFor ----------
 
     @Test
-    void homeForReturnsAdminOrTasksByRole() {
+    void homeForReturnsAdminOrDashboardByRole() {
         assertEquals("/admin", SecurityConfig.homeFor(auth("ROLE_ADMIN")));
-        assertEquals("/tasks", SecurityConfig.homeFor(auth("ROLE_USER")));
+        assertEquals("/dashboard", SecurityConfig.homeFor(auth("ROLE_USER")));
     }
 
     // ---------- GET /login ----------
@@ -101,7 +101,7 @@ class AuthControllerTest {
     void loginFormRedirectsAuthenticatedUsersToTheirHome() {
         assertEquals("redirect:/admin",
                 controller.loginForm(null, null, null, auth("ROLE_ADMIN"), new ConcurrentModel()));
-        assertEquals("redirect:/tasks",
+        assertEquals("redirect:/dashboard",
                 controller.loginForm(null, null, null, auth("ROLE_USER"), new ConcurrentModel()));
     }
 
@@ -137,7 +137,7 @@ class AuthControllerTest {
     void loginRedirectsUserAndAdminToTheirHome() {
         LoginRequest r = login("an", "pw");
         when(authService.login(r, req, res)).thenReturn(auth("ROLE_USER"));
-        assertEquals("redirect:/tasks", controller.login(r, noErrors(r), req, res, new ConcurrentModel()));
+        assertEquals("redirect:/dashboard", controller.login(r, noErrors(r), req, res, new ConcurrentModel()));
 
         LoginRequest a = login("root", "pw");
         when(authService.login(a, req, res)).thenReturn(auth("ROLE_ADMIN"));

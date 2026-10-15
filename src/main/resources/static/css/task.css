@@ -29,6 +29,20 @@
     color:#8c97aa;
 }
 
+.dashboard-nav-link{
+    display:block;
+    padding:11px 12px;
+    margin-bottom:12px;
+    border-radius:10px;
+    background:#1b2433;
+    color:#c3cada;
+}
+
+.dashboard-nav-link:hover{
+    background:#273453;
+    color:white;
+}
+
 .detail{
     display:flex;
     flex-direction:column;

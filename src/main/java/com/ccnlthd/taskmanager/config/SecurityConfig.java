@@ -19,7 +19,7 @@ public class SecurityConfig {
 	public static String homeFor(Authentication auth) {
 		boolean admin = auth.getAuthorities().stream()
 				.anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()));
-		return admin ? "/admin" : "/tasks";
+		return admin ? "/admin" : "/dashboard";
 	}
 
 	@Bean
@@ -38,6 +38,7 @@ public class SecurityConfig {
 							"/js/**", 
 							"/images/**").permitAll()
 						.requestMatchers("/admin", "/admin/**").hasRole("ADMIN")
+						.requestMatchers("/dashboard").hasRole("USER")
 						.requestMatchers("/tasks", "/tasks/**").hasRole("USER")
 						.anyRequest().authenticated())
 				// POST /login is handled by AuthController, so form login is not used

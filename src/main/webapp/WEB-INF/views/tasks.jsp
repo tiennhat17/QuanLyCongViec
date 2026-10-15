@@ -37,6 +37,7 @@
         </div>
       </div>
   
+      <a class="dashboard-nav-link" href="${ctx}/dashboard">▦ Thống kê công việc</a>
       <input id="categorySearch" placeholder="Tìm danh mục...">
       <div class="section-title">
         Danh mục 
