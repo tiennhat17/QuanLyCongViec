@@ -28,7 +28,7 @@
                     <span>♙</span>
                     Quản trị người dùng
                 </a>
-                <a class="admin-menu-item active" href="${pageContext.request.contextPath}/admin/tasks">
+                <a class="admin-menu-item" href="${pageContext.request.contextPath}/admin/tasks">
                     <span>✓</span>
                     Thống kê công việc
                 </a>
@@ -65,7 +65,7 @@
                 <div class="admin-stat active">
                     <span class="admin-stat-label">Tỷ lệ hoàn thành</span>
                     <span class="admin-stat-value">
-                        <fmt:formatNumber value="${statistics.completionRate()}" maxFractionDigits="1"/>%
+                        <fmt:formatNumber value="${statistics.completionRate}" maxFractionDigits="1"/>%
                     </span>
                 </div>
                 <div class="admin-stat total">

@@ -98,7 +98,7 @@ class TaskManagerApiApplicationTests {
 		mockMvc.perform(get("/admin").with(user("admin").roles("ADMIN")))
 				.andExpect(status().isOk())
 				.andExpect(view().name("admin"))
-				.andExpect(model().attributeExists("statistics"));
+				.andExpect(model().attributeExists("dashboard"));
 	}
 
 	@Test
@@ -116,7 +116,7 @@ class TaskManagerApiApplicationTests {
 
 		mockMvc.perform(get("/admin").with(user("admin").roles("ADMIN")))
 				.andExpect(status().isOk())
-				.andExpect(model().attribute("statistics",
+				.andExpect(model().attribute("dashboard",
 						org.hamcrest.Matchers.allOf(
 								org.hamcrest.Matchers.hasProperty("totalTasks", org.hamcrest.Matchers.equalTo(2L)),
 								org.hamcrest.Matchers.hasProperty("completedTasks", org.hamcrest.Matchers.equalTo(1L)),

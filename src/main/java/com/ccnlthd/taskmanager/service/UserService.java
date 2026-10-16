@@ -1,33 +1,31 @@
 package com.ccnlthd.taskmanager.service;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import com.ccnlthd.taskmanager.model.User;
 import com.ccnlthd.taskmanager.model.User.Role;
 import com.ccnlthd.taskmanager.repository.UserRepository;
-import com.ccnlthd.taskmanager.repository.TaskRepository;
-import com.ccnlthd.taskmanager.repository.CategoryRepository;
-import com.ccnlthd.taskmanager.repository.UserTaskCount;
-import com.ccnlthd.taskmanager.dto.AdminUserDTO;
 
 import lombok.RequiredArgsConstructor;
 
-@Service 
-@RequiredArgsConstructor 
+/**
+ * Service nghiệp vụ tài khoản cá nhân: đăng ký, đăng nhập, tra cứu,
+ * cập nhật hồ sơ, đổi mật khẩu.
+ *
+ * <p>Các thao tác dành riêng cho admin (thống kê dashboard, khóa/mở tài khoản,
+ * tìm kiếm user có phân trang) đã được tách sang
+ * {@link AdminDashboardService} và {@link AdminUserService}.</p>
+ */
+@Service
+@RequiredArgsConstructor
 public class UserService {
     private final UserRepository users;
     private final PasswordEncoder encoder;
-    private final TaskRepository tasks;
-    private final CategoryRepository categories;
 
     @Transactional
     public User register(String username, String email, String password) {
@@ -48,14 +46,9 @@ public class UserService {
         u.setRole(Role.USER);
         u.setCreatedAt(LocalDateTime.now(ZoneOffset.ofTotalSeconds(-clientTimezoneOffsetMinutes * 60)));
         users.save(u);
-        /*Category inbox = new Category();   // danh mục mặc định cho người dùng mới
-        inbox.setName("Hộp thư đến");
-        inbox.setUser(u);
-        categories.save(inbox); */
         return u;
     }
 
-    
     public User login(String identity, String password) {
         User u = users.findByUsernameOrEmail(identity, identity)
                 .filter(x -> encoder.matches(password, x.getPassword()))
@@ -66,52 +59,6 @@ public class UserService {
 
     public User findByUsername(String username) {
         return users.findByUsername(username).orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user"));
-    }
-
-    @Transactional(readOnly = true)
-    public Page<AdminUserDTO> findUsers(String search, Pageable pageable) {
-        String keyword = search == null ? "" : search.trim();
-        Page<User> result = users.findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(
-                keyword, keyword, pageable);
-        List<Long> userIds = result.getContent().stream()
-                .map(User::getId)
-                .toList();
-        Map<Long, Long> counts = new HashMap<>();
-        if (!userIds.isEmpty()) {
-            for (UserTaskCount count : tasks.countByUserIds(userIds)) {
-                counts.put(count.getUserId(), count.getTaskCount());
-            }
-        }
-        return result.map(user -> new AdminUserDTO(user, counts.getOrDefault(user.getId(), 0L)));
-    }
-
-    @Transactional(readOnly = true)
-    public AdminUserStatistics getAdminUserStatistics() {
-        long totalUsers = users.count();
-        long activeUsers = users.countByStatus(true);
-        long lockedUsers = users.countByStatus(false);
-        long totalTasks = tasks.count();
-        long completedTasks = tasks.countByStatus(com.ccnlthd.taskmanager.model.Task.Status.COMPLETED);
-        long pendingTasks = tasks.countByStatus(com.ccnlthd.taskmanager.model.Task.Status.TODO);
-        long overdueTasks = tasks.countByStatusAndDueDateBefore(
-                com.ccnlthd.taskmanager.model.Task.Status.TODO, java.time.LocalDate.now());
-        long totalCategories = categories.count();
-        List<AdminUserDTO> recentUsers = users.findTop5ByOrderByCreatedAtDesc().stream()
-                .map(user -> new AdminUserDTO(user, 0))
-                .toList();
-        return new AdminUserStatistics(totalUsers, activeUsers, lockedUsers,
-                recentUsers, totalTasks, completedTasks,
-                pendingTasks, overdueTasks, totalCategories);
-    }
-
-    @Transactional
-    public void updateStatus(Long targetId, String adminUsername, boolean enabled) {
-        User target = users.findById(targetId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản"));
-        if (!enabled && target.getUsername().equals(adminUsername)) {
-            throw new IllegalArgumentException("Admin không thể tự khóa tài khoản của mình");
-        }
-        target.setStatus(enabled);
     }
 
     @Transactional(readOnly = true)

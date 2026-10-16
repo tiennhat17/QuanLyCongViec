@@ -17,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 public class CategoryService {
     private final CategoryRepository categories;
 
-
     public Category save(Category category) {
         return categories.save(category);
     }
