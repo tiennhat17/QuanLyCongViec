@@ -19,7 +19,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.ccnlthd.taskmanager.model.User;
+import com.ccnlthd.taskmanager.model.Category;
+import com.ccnlthd.taskmanager.model.Task;
+import com.ccnlthd.taskmanager.repository.CategoryRepository;
+import com.ccnlthd.taskmanager.repository.TaskRepository;
 import com.ccnlthd.taskmanager.repository.UserRepository;
+import java.time.LocalDate;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -33,10 +38,18 @@ class TaskManagerApiApplicationTests {
 	private UserRepository userRepository;
 
 	@Autowired
+	private TaskRepository taskRepository;
+
+	@Autowired
+	private CategoryRepository categoryRepository;
+
+	@Autowired
 	private PasswordEncoder passwordEncoder;
 
 	@BeforeEach
 	void cleanUsers() {
+		taskRepository.deleteAll();
+		categoryRepository.deleteAll();
 		userRepository.deleteAll();
 	}
 
@@ -85,7 +98,52 @@ class TaskManagerApiApplicationTests {
 		mockMvc.perform(get("/admin").with(user("admin").roles("ADMIN")))
 				.andExpect(status().isOk())
 				.andExpect(view().name("admin"))
-				.andExpect(model().attributeExists("statistics"));
+				.andExpect(model().attributeExists("dashboard"));
+	}
+
+	@Test
+	void adminDashboardIncludesTaskAndCategoryStatistics() throws Exception {
+		User user = createUser("stats-user", "stats@example.com");
+		user = userRepository.save(user);
+		Category category = new Category();
+		category.setName("Work");
+		category.setUser(user);
+		category = categoryRepository.save(category);
+
+		Task completed = task(user, category, Task.Status.COMPLETED, LocalDate.now());
+		Task overdue = task(user, category, Task.Status.TODO, LocalDate.now().minusDays(1));
+		taskRepository.saveAll(java.util.List.of(completed, overdue));
+
+		mockMvc.perform(get("/admin").with(user("admin").roles("ADMIN")))
+				.andExpect(status().isOk())
+				.andExpect(model().attribute("dashboard",
+						org.hamcrest.Matchers.allOf(
+								org.hamcrest.Matchers.hasProperty("totalTasks", org.hamcrest.Matchers.equalTo(2L)),
+								org.hamcrest.Matchers.hasProperty("completedTasks", org.hamcrest.Matchers.equalTo(1L)),
+								org.hamcrest.Matchers.hasProperty("pendingTasks", org.hamcrest.Matchers.equalTo(1L)),
+								org.hamcrest.Matchers.hasProperty("overdueTasks", org.hamcrest.Matchers.equalTo(1L)),
+								org.hamcrest.Matchers.hasProperty("totalCategories", org.hamcrest.Matchers.equalTo(1L)))));
+	}
+
+	@Test
+	void adminUserListIncludesTaskCountPerUser() throws Exception {
+		User user = userRepository.save(createUser("task-owner", "task-owner@example.com"));
+		Category category = new Category();
+		category.setName("Work");
+		category.setUser(user);
+		category = categoryRepository.save(category);
+		taskRepository.save(task(user, category, Task.Status.TODO, LocalDate.now()));
+		taskRepository.save(task(user, category, Task.Status.COMPLETED, LocalDate.now()));
+
+		mockMvc.perform(get("/admin/users").with(user("admin").roles("ADMIN")))
+				.andExpect(status().isOk())
+				.andExpect(model().attribute("users",
+						org.hamcrest.Matchers.hasProperty("content",
+								org.hamcrest.Matchers.hasItem(org.hamcrest.Matchers.allOf(
+										org.hamcrest.Matchers.hasProperty("id",
+												org.hamcrest.Matchers.equalTo(user.getId())),
+										org.hamcrest.Matchers.hasProperty("taskCount",
+												org.hamcrest.Matchers.equalTo(2L)))))));
 	}
 
 	@Test
@@ -121,6 +179,25 @@ class TaskManagerApiApplicationTests {
 	void regularUserCannotViewAdminUsers() throws Exception {
 		mockMvc.perform(get("/admin/users").with(user("user").roles("USER")))
 				.andExpect(status().isForbidden());
+	}
+
+	private User createUser(String username, String email) {
+		User user = new User();
+		user.setUsername(username);
+		user.setEmail(email);
+		user.setPassword("encoded");
+		user.setRole(User.Role.USER);
+		return user;
+	}
+
+	private Task task(User user, Category category, Task.Status status, LocalDate dueDate) {
+		Task task = new Task();
+		task.setTitle("Task");
+		task.setUser(user);
+		task.setCategory(category);
+		task.setStatus(status);
+		task.setDueDate(dueDate);
+		return task;
 	}
 
 	@Test

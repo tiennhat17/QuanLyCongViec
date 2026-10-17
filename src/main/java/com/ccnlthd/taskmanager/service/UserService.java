@@ -1,12 +1,11 @@
 package com.ccnlthd.taskmanager.service;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 
 import com.ccnlthd.taskmanager.model.User;
 import com.ccnlthd.taskmanager.model.User.Role;
@@ -14,8 +13,16 @@ import com.ccnlthd.taskmanager.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
-@Service 
-@RequiredArgsConstructor 
+/**
+ * Service nghiệp vụ tài khoản cá nhân: đăng ký, đăng nhập, tra cứu,
+ * cập nhật hồ sơ, đổi mật khẩu.
+ *
+ * <p>Các thao tác dành riêng cho admin (thống kê dashboard, khóa/mở tài khoản,
+ * tìm kiếm user có phân trang) đã được tách sang
+ * {@link AdminDashboardService} và {@link AdminUserService}.</p>
+ */
+@Service
+@RequiredArgsConstructor
 public class UserService {
     private final UserRepository users;
     private final PasswordEncoder encoder;
@@ -39,14 +46,9 @@ public class UserService {
         u.setRole(Role.USER);
         u.setCreatedAt(LocalDateTime.now(ZoneOffset.ofTotalSeconds(-clientTimezoneOffsetMinutes * 60)));
         users.save(u);
-        /*Category inbox = new Category();   // danh mục mặc định cho người dùng mới
-        inbox.setName("Hộp thư đến");
-        inbox.setUser(u);
-        categories.save(inbox); */
         return u;
     }
 
-    
     public User login(String identity, String password) {
         User u = users.findByUsernameOrEmail(identity, identity)
                 .filter(x -> encoder.matches(password, x.getPassword()))
@@ -57,32 +59,6 @@ public class UserService {
 
     public User findByUsername(String username) {
         return users.findByUsername(username).orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user"));
-    }
-
-    @Transactional(readOnly = true)
-    public Page<User> findUsers(String search, Pageable pageable) {
-        String keyword = search == null ? "" : search.trim();
-        return users.findByUsernameContainingIgnoreCaseOrEmailContainingIgnoreCase(
-                keyword, keyword, pageable);
-    }
-
-    @Transactional(readOnly = true)
-    public AdminUserStatistics getAdminUserStatistics() {
-        long totalUsers = users.count();
-        long activeUsers = users.countByStatus(true);
-        long lockedUsers = users.countByStatus(false);
-        return new AdminUserStatistics(totalUsers, activeUsers, lockedUsers,
-                users.findTop5ByOrderByCreatedAtDesc());
-    }
-
-    @Transactional
-    public void updateStatus(Long targetId, String adminUsername, boolean enabled) {
-        User target = users.findById(targetId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản"));
-        if (!enabled && target.getUsername().equals(adminUsername)) {
-            throw new IllegalArgumentException("Admin không thể tự khóa tài khoản của mình");
-        }
-        target.setStatus(enabled);
     }
 
     @Transactional(readOnly = true)

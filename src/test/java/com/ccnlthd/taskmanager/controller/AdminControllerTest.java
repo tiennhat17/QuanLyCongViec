@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
@@ -18,14 +17,18 @@ import org.springframework.security.core.Authentication;
 import org.springframework.ui.ConcurrentModel;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.ccnlthd.taskmanager.service.UserService;
-import com.ccnlthd.taskmanager.service.AdminUserStatistics;
+import com.ccnlthd.taskmanager.dto.AdminDashboardDTO;
+import com.ccnlthd.taskmanager.service.AdminDashboardService;
+import com.ccnlthd.taskmanager.service.AdminUserService;
 
 @ExtendWith(MockitoExtension.class)
 class AdminControllerTest {
 
     @Mock
-    private UserService userService;
+    private AdminDashboardService adminDashboardService;
+
+    @Mock
+    private AdminUserService adminUserService;
 
     @Mock
     private Authentication authentication;
@@ -33,19 +36,21 @@ class AdminControllerTest {
     @Mock
     private RedirectAttributes redirectAttributes;
 
-    @InjectMocks
-    private AdminController controller;
+    private AdminController newController() {
+        return new AdminController(adminDashboardService, adminUserService);
+    }
 
     @Test
     void usersUsesTenItemPageAndClampsNegativePage() {
-        when(userService.findUsers(eq("  An  "), any(Pageable.class)))
+        when(adminUserService.findUsers(eq("  An  "), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(java.util.List.of()));
 
+        AdminController controller = newController();
         ConcurrentModel model = new ConcurrentModel();
         assertEquals("admin-users", controller.users("  An  ", -4, model));
 
         ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
-        verify(userService).findUsers(eq("  An  "), pageable.capture());
+        verify(adminUserService).findUsers(eq("  An  "), pageable.capture());
         assertEquals(0, pageable.getValue().getPageNumber());
         assertEquals(10, pageable.getValue().getPageSize());
         assertEquals("DESC", pageable.getValue().getSort().getOrderFor("createdAt").getDirection().name());
@@ -53,27 +58,45 @@ class AdminControllerTest {
     }
 
     @Test
-    void dashboardAddsUserStatisticsToModel() {
-        AdminUserStatistics statistics = new AdminUserStatistics(12, 9, 3,
-                java.util.List.of());
-        when(userService.getAdminUserStatistics()).thenReturn(statistics);
+    void dashboardAddsDashboardToModel() {
+        AdminDashboardDTO dashboard = new AdminDashboardDTO(
+                12, 9, 3, 20, 8, 12, 4, 6, 4,
+                java.util.List.of(), java.util.List.of(), java.util.List.of());
+        when(adminDashboardService.getAdminDashboard()).thenReturn(dashboard);
 
+        AdminController controller = newController();
         ConcurrentModel model = new ConcurrentModel();
 
         assertEquals("admin", controller.dashboard(model));
-        assertEquals(statistics, model.getAttribute("statistics"));
-        verify(userService).getAdminUserStatistics();
+        assertEquals(dashboard, model.getAttribute("dashboard"));
+        verify(adminDashboardService).getAdminDashboard();
+    }
+
+    @Test
+    void taskStatisticsAddsStatisticsToModel() {
+        AdminDashboardDTO dashboard = new AdminDashboardDTO(
+                12, 9, 3, 20, 8, 12, 4, 6, 4,
+                java.util.List.of(), java.util.List.of(), java.util.List.of());
+        when(adminDashboardService.getAdminDashboard()).thenReturn(dashboard);
+
+        AdminController controller = newController();
+        ConcurrentModel model = new ConcurrentModel();
+
+        assertEquals("admin-tasks", controller.taskStatistics(model));
+        assertEquals(dashboard, model.getAttribute("statistics"));
+        verify(adminDashboardService).getAdminDashboard();
     }
 
     @Test
     void updateStatusAddsSuccessMessageAndPreservesSearchAndPage() {
         when(authentication.getName()).thenReturn("admin");
 
+        AdminController controller = newController();
         String view = controller.updateStatus(7L, false, "alice@example.com", 2,
                 authentication, redirectAttributes);
 
         assertEquals("redirect:/admin/users?page=2&search=alice%40example.com", view);
-        verify(userService).updateStatus(7L, "admin", false);
+        verify(adminUserService).updateStatus(7L, "admin", false);
         verify(redirectAttributes).addFlashAttribute("msg", "Đã khóa tài khoản.");
     }
 
@@ -81,12 +104,28 @@ class AdminControllerTest {
     void updateStatusAddsErrorMessageWhenServiceRejectsOperation() {
         when(authentication.getName()).thenReturn("admin");
         org.mockito.Mockito.doThrow(new IllegalArgumentException("Không tìm thấy tài khoản"))
-                .when(userService).updateStatus(99L, "admin", true);
+                .when(adminUserService).updateStatus(99L, "admin", true);
 
+        AdminController controller = newController();
         String view = controller.updateStatus(99L, true, "", -1,
                 authentication, redirectAttributes);
 
         assertEquals("redirect:/admin/users?page=0", view);
         verify(redirectAttributes).addFlashAttribute("error", "Không tìm thấy tài khoản");
+    }
+
+    @Test
+    void updateStatusAddsErrorMessageWhenSelfLockRejected() {
+        when(authentication.getName()).thenReturn("admin");
+        org.mockito.Mockito.doThrow(new org.springframework.security.access.AccessDeniedException(
+                "Admin không thể tự khóa tài khoản của mình"))
+                .when(adminUserService).updateStatus(1L, "admin", false);
+
+        AdminController controller = newController();
+        String view = controller.updateStatus(1L, false, "", 0,
+                authentication, redirectAttributes);
+
+        assertEquals("redirect:/admin/users?page=0", view);
+        verify(redirectAttributes).addFlashAttribute("error", "Admin không thể tự khóa tài khoản của mình");
     }
 }

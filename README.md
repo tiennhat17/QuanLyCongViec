@@ -32,13 +32,3 @@ docker compose up --build
 The API listens on `http://localhost:8080`. Check `GET /api/hello` and `GET /actuator/health`. Stop the stack with `Ctrl+C`; run `docker compose down` to stop containers. Use `docker compose down -v` only when you intend to delete the local database volume.
 
 Spring Boot does not load `.env` automatically. Compose reads it for container configuration; when launching from the IDE, configure `DB_URL`, `DB_USERNAME`, and `DB_PASSWORD` in the run configuration or the shell environment.
-
-## Current scope
-
-The application currently includes account registration/login, role-based
-authorization, and the first ADMIN flow for viewing and searching users at
-`/admin/users`. The task, category, account-management actions, and dashboard
-features remain under development. User task counts are not shown yet because
-the `tasks` table and Task module have not been implemented. `ddl-auto=update`
-is for local development and must not be used as a production schema-management
-strategy.
