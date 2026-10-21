@@ -23,7 +23,7 @@ public final class ProblemSupport {
     /** API clients: /api/** paths or requests that explicitly prefer JSON over HTML. */
     public static boolean isApi(HttpServletRequest req) {
         String path = req.getRequestURI().substring(req.getContextPath().length());
-        if (path.startsWith("/api/")) {
+        if (path.equals("/api") || path.startsWith("/api/")) {
             return true;
         }
         String accept = req.getHeader(HttpHeaders.ACCEPT);

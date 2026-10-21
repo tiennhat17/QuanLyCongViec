@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -19,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.ccnlthd.taskmanager.dto.CategoryCreateDTO;
 import com.ccnlthd.taskmanager.dto.TaskCreateDTO;
+import com.ccnlthd.taskmanager.exception.ProblemSupport;
 import com.ccnlthd.taskmanager.model.Category;
 import com.ccnlthd.taskmanager.model.Task;
 import com.ccnlthd.taskmanager.model.User;
@@ -26,6 +28,7 @@ import com.ccnlthd.taskmanager.service.CategoryService;
 import com.ccnlthd.taskmanager.service.TaskService;
 import com.ccnlthd.taskmanager.service.UserService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -73,11 +76,15 @@ public class TaskController {
             @Valid @ModelAttribute("taskForm") TaskCreateDTO dto,
             BindingResult result,
             Authentication authentication,
-            Model model) {
+            HttpServletRequest request,
+            Model model) throws BindException {
         User user = getCurrentUser(authentication);
 
         // Bean Validation thất bại.
         if (result.hasErrors()) {
+            if (ProblemSupport.isApi(request)) {
+                throw new BindException(result);
+            }
 
             model.addAttribute("openTaskModal", true);
             model.addAttribute("categoryForm", new CategoryCreateDTO());
