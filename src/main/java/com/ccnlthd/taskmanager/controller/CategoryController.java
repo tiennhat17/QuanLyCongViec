@@ -3,6 +3,7 @@ package com.ccnlthd.taskmanager.controller;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,12 +12,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 
 import com.ccnlthd.taskmanager.dto.CategoryCreateDTO;
 import com.ccnlthd.taskmanager.dto.TaskCreateDTO;
+import com.ccnlthd.taskmanager.exception.ProblemSupport;
 import com.ccnlthd.taskmanager.model.Category;
 import com.ccnlthd.taskmanager.model.User;
 import com.ccnlthd.taskmanager.service.CategoryService;
 import com.ccnlthd.taskmanager.service.TaskService;
 import com.ccnlthd.taskmanager.service.UserService;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -37,10 +40,14 @@ public class CategoryController {
             @Valid @ModelAttribute("categoryForm") CategoryCreateDTO dto,
             BindingResult result,
             Authentication authentication,
-            Model model) {
+            HttpServletRequest request,
+            Model model) throws BindException {
 
         // Bean Validation thất bại
         if (result.hasErrors()) {
+            if (ProblemSupport.isApi(request)) {
+                throw new BindException(result);
+            }
             model.addAttribute("openCatModal", true);
             model.addAttribute("taskForm", new TaskCreateDTO());
 

@@ -4,6 +4,7 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -14,6 +15,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.ccnlthd.taskmanager.config.SecurityConfig;
 import com.ccnlthd.taskmanager.dto.request.LoginRequest;
 import com.ccnlthd.taskmanager.dto.request.RegisterRequest;
+import com.ccnlthd.taskmanager.exception.ProblemSupport;
 import com.ccnlthd.taskmanager.service.AuthService;
 import com.ccnlthd.taskmanager.service.UserService;
 
@@ -48,9 +50,12 @@ public class AuthController {
 
     @PostMapping("/login")
     public String login(@Valid @ModelAttribute("loginRequest") LoginRequest request, BindingResult result,
-                        HttpServletRequest req, HttpServletResponse res, Model m) {
+                        HttpServletRequest req, HttpServletResponse res, Model m) throws BindException {
         m.addAttribute("identity", request.getIdentity());
         if (result.hasErrors()) {
+            if (ProblemSupport.isApi(req)) {
+                throw new BindException(result);
+            }
             m.addAttribute("error", result.getAllErrors().get(0).getDefaultMessage());
             return "login";
         }
@@ -72,10 +77,14 @@ public class AuthController {
 
     @PostMapping("/register")
     public String register(@Valid @ModelAttribute("registerRequest") RegisterRequest request, BindingResult result,
-                           Model m, RedirectAttributes ra, HttpServletResponse response) {
+                           Model m, RedirectAttributes ra, HttpServletRequest req, HttpServletResponse response)
+            throws BindException {
         m.addAttribute("username", request.getUsername());
         m.addAttribute("email", request.getEmail());
         if (result.hasErrors()) {
+            if (ProblemSupport.isApi(req)) {
+                throw new BindException(result);
+            }
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             m.addAttribute("error", result.getAllErrors().get(0).getDefaultMessage());
             return "register";

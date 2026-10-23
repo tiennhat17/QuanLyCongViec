@@ -123,7 +123,7 @@ class AuthControllerTest {
     // ---------- POST /login ----------
 
     @Test
-    void loginReturnsFormWithFirstValidationError() {
+    void loginReturnsFormWithFirstValidationError() throws Exception {
         LoginRequest r = login("", "");
         ConcurrentModel m = new ConcurrentModel();
 
@@ -134,7 +134,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void loginRedirectsUserAndAdminToTheirHome() {
+    void loginRedirectsUserAndAdminToTheirHome() throws Exception {
         LoginRequest r = login("an", "pw");
         when(authService.login(r, req, res)).thenReturn(auth("ROLE_USER"));
         assertEquals("redirect:/tasks", controller.login(r, noErrors(r), req, res, new ConcurrentModel()));
@@ -145,7 +145,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void loginShowsServiceErrorAndKeepsIdentity() {
+    void loginShowsServiceErrorAndKeepsIdentity() throws Exception {
         LoginRequest r = login("an", "bad");
         when(authService.login(r, req, res)).thenThrow(new IllegalArgumentException("Sai tài khoản hoặc mật khẩu"));
         ConcurrentModel m = new ConcurrentModel();
@@ -156,26 +156,49 @@ class AuthControllerTest {
         assertEquals("an", m.getAttribute("identity"));
     }
 
+    @Test
+    void loginThrowsBindExceptionForApiRequests() {
+        LoginRequest r = login("", "");
+        MockHttpServletRequest api = new MockHttpServletRequest();
+        api.addHeader("Accept", "application/json");
+
+        org.junit.jupiter.api.Assertions.assertThrows(org.springframework.validation.BindException.class,
+                () -> controller.login(r, withError(r, "x"), api, res, new ConcurrentModel()));
+        verify(authService, never()).login(any(), any(), any());
+    }
+
+    @Test
+    void registerThrowsBindExceptionForApiRequests() {
+        RegisterRequest r = register();
+        MockHttpServletRequest api = new MockHttpServletRequest();
+        api.addHeader("Accept", "application/json");
+
+        org.junit.jupiter.api.Assertions.assertThrows(org.springframework.validation.BindException.class,
+                () -> controller.register(r, withError(r, "x"), new ConcurrentModel(),
+                        new RedirectAttributesModelMap(), api, new MockHttpServletResponse()));
+        verify(userService, never()).register(any(), any(), any(), anyInt());
+    }
+
     // ---------- POST /register ----------
 
     @Test
-    void registerReturnsFormOnValidationError() {
+    void registerReturnsFormOnValidationError() throws Exception {
         RegisterRequest r = register();
         ConcurrentModel m = new ConcurrentModel();
 
         assertEquals("register", controller.register(r, withError(r, "Email không hợp lệ"), m,
-                new RedirectAttributesModelMap(), new org.springframework.mock.web.MockHttpServletResponse()));
+                new RedirectAttributesModelMap(), req, new org.springframework.mock.web.MockHttpServletResponse()));
 
         assertEquals("Email không hợp lệ", m.getAttribute("error"));
         verify(userService, never()).register(any(), any(), any(), anyInt());
     }
 
     @Test
-    void registerRedirectsToLoginWithFlashMessageOnSuccess() {
+    void registerRedirectsToLoginWithFlashMessageOnSuccess() throws Exception {
         RegisterRequest r = register();
         RedirectAttributesModelMap ra = new RedirectAttributesModelMap();
 
-        assertEquals("redirect:/login", controller.register(r, noErrors(r), new ConcurrentModel(), ra,
+        assertEquals("redirect:/login", controller.register(r, noErrors(r), new ConcurrentModel(), ra, req,
                 new org.springframework.mock.web.MockHttpServletResponse()));
 
         verify(userService).register("an", "an@example.com", "secret1", 0);
@@ -183,7 +206,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void registerShowsServiceErrorOnDuplicate() {
+    void registerShowsServiceErrorOnDuplicate() throws Exception {
         RegisterRequest r = register();
         when(userService.register("an", "an@example.com", "secret1", 0))
                 .thenThrow(new IllegalArgumentException("Tên đăng nhập đã tồn tại"));
@@ -191,7 +214,7 @@ class AuthControllerTest {
         RedirectAttributesModelMap ra = new RedirectAttributesModelMap();
         org.springframework.mock.web.MockHttpServletResponse resp = new org.springframework.mock.web.MockHttpServletResponse();
 
-        assertEquals("register", controller.register(r, noErrors(r), m, ra, resp));
+        assertEquals("register", controller.register(r, noErrors(r), m, ra, req, resp));
 
         assertEquals(409, resp.getStatus());
         assertEquals("Tên đăng nhập đã tồn tại", m.getAttribute("error"));
