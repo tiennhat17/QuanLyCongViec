@@ -2,7 +2,10 @@ package com.ccnlthd.taskmanager.service;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import com.ccnlthd.taskmanager.dto.TaskCreateDTO;
 import com.ccnlthd.taskmanager.model.Category;
@@ -37,7 +40,7 @@ public class TaskService {
     public Boolean updateStatusByIdAndUserId(Long taskId, Long userId) {
         Task task = tasks.findByIdAndUserId(taskId, userId);
         if (task == null) {
-            throw new RuntimeException("Task không tồn tại");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Task không tồn tại");
         }
         task.setStatus(task.isCompleted() ? Task.Status.TODO : Task.Status.COMPLETED);
         tasks.save(task);
