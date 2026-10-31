@@ -29,6 +29,7 @@ import com.ccnlthd.taskmanager.service.TaskService;
 import com.ccnlthd.taskmanager.service.UserService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -77,6 +78,7 @@ public class TaskController {
             BindingResult result,
             Authentication authentication,
             HttpServletRequest request,
+            HttpServletResponse response,
             Model model) throws BindException {
         User user = getCurrentUser(authentication);
 
@@ -86,6 +88,7 @@ public class TaskController {
                 throw new BindException(result);
             }
 
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             model.addAttribute("openTaskModal", true);
             model.addAttribute("categoryForm", new CategoryCreateDTO());
 

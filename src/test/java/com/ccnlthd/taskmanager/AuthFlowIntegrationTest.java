@@ -6,7 +6,9 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
@@ -17,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -139,14 +142,87 @@ class AuthFlowIntegrationTest {
         save("an", "an@example.com", "secret1", User.Role.USER, true);
 
         mockMvc.perform(post("/login").with(csrf()).param("identity", "an").param("password", "wrong"))
+                .andExpect(status().isOk())
                 .andExpect(view().name("login"))
                 .andExpect(model().attribute("error", "Sai tài khoản hoặc mật khẩu"));
         mockMvc.perform(post("/login").with(csrf()).param("identity", "ghost").param("password", "secret1"))
+                .andExpect(status().isOk())
                 .andExpect(view().name("login"))
                 .andExpect(model().attribute("error", "Sai tài khoản hoặc mật khẩu"));
         mockMvc.perform(post("/login").with(csrf()).param("identity", "").param("password", ""))
+                .andExpect(status().isBadRequest())
                 .andExpect(view().name("login"))
                 .andExpect(model().attributeExists("error"));
+    }
+
+    @Test
+    void apiLoginReturnsProblemDetailForBlankFieldsAndInvalidCredentials() throws Exception {
+        save("an", "an@example.com", "secret1", User.Role.USER, true);
+
+        mockMvc.perform(post("/login").with(csrf())
+                .accept(MediaType.APPLICATION_JSON)
+                .param("identity", "").param("password", ""))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.errors.identity").exists())
+                .andExpect(jsonPath("$.errors.password").exists());
+
+        mockMvc.perform(post("/login").with(csrf())
+                .accept(MediaType.APPLICATION_JSON)
+                .param("identity", "an").param("password", "wrong"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.detail").value("Sai tài khoản hoặc mật khẩu"));
+    }
+
+    @Test
+    void apiRegistrationValidationReturnsFieldErrors() throws Exception {
+        mockMvc.perform(post("/register").with(csrf())
+                .accept(MediaType.APPLICATION_JSON)
+                .param("username", "an").param("email", "not-an-email")
+                .param("password", "secret1").param("confirm", "different"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.errors.email").value("Email không hợp lệ"))
+                .andExpect(jsonPath("$.errors.passwordConfirmed").value("Mật khẩu xác nhận không khớp"));
+    }
+
+    @Test
+    void apiTaskAndCategoryValidationReturnFieldErrors() throws Exception {
+        save("an", "an@example.com", "secret1", User.Role.USER, true);
+
+        mockMvc.perform(post("/tasks").with(csrf()).with(user("an").roles("USER"))
+                .accept(MediaType.APPLICATION_JSON)
+                .param("title", "   ").param("categoryId", "1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.errors.title").value("Tiêu đề không được để trống"));
+
+        mockMvc.perform(post("/categories").with(csrf()).with(user("an").roles("USER"))
+                .accept(MediaType.APPLICATION_JSON)
+                .param("name", "   "))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.errors.name").value("Tên danh mục không được để trống"));
+    }
+
+    @Test
+    void htmlTaskAndCategoryValidationReturnBadRequestWithFormView() throws Exception {
+        save("an", "an@example.com", "secret1", User.Role.USER, true);
+
+        mockMvc.perform(post("/tasks").with(csrf()).with(user("an").roles("USER"))
+                .accept(MediaType.TEXT_HTML)
+                .param("title", "   ").param("categoryId", "1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(view().name("tasks"));
+
+        mockMvc.perform(post("/categories").with(csrf()).with(user("an").roles("USER"))
+                .accept(MediaType.TEXT_HTML)
+                .param("name", "   "))
+                .andExpect(status().isBadRequest())
+                .andExpect(view().name("tasks"));
     }
 
     @Test
@@ -170,6 +246,25 @@ class AuthFlowIntegrationTest {
         users.save(u);
 
         mockMvc.perform(get("/tasks").session(session)).andExpect(redirectedUrl("/login?locked"));
+    }
+
+    @Test
+    void apiSecurityErrorsOmitNullProblemType() throws Exception {
+        mockMvc.perform(get("/api/private"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").doesNotExist())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.traceId").exists());
+
+        mockMvc.perform(get("/admin").accept("application/json").with(user("an").roles("USER")))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.type").doesNotExist())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.timestamp").exists())
+                .andExpect(jsonPath("$.traceId").exists());
     }
 
     // ---------- authorization ----------

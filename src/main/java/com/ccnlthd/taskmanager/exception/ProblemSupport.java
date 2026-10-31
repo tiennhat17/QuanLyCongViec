@@ -33,6 +33,7 @@ public final class ProblemSupport {
 
     public static ProblemDetail build(HttpStatus status, String detail, HttpServletRequest req, String traceId) {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(status, detail);
+        pd.setType(null);
         pd.setTitle(status.getReasonPhrase());
         pd.setInstance(URI.create(req.getRequestURI()));
         pd.setProperty("timestamp", Instant.now());
@@ -60,14 +61,18 @@ public final class ProblemSupport {
         resp.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
         resp.setCharacterEncoding("UTF-8");
         Map<String, Object> props = pd.getProperties();
-        String json = "{\"type\":" + quote(String.valueOf(pd.getType()))
-                + ",\"title\":" + quote(pd.getTitle())
-                + ",\"status\":" + pd.getStatus()
-                + ",\"detail\":" + quote(pd.getDetail())
-                + ",\"instance\":" + quote(String.valueOf(pd.getInstance()))
-                + ",\"timestamp\":" + quote(String.valueOf(props.get("timestamp")))
-                + ",\"traceId\":" + quote(String.valueOf(props.get("traceId"))) + "}";
-        resp.getWriter().write(json);
+        StringBuilder json = new StringBuilder("{");
+        if (pd.getType() != null) {
+            json.append("\"type\":").append(quote(pd.getType().toString())).append(',');
+        }
+        json.append("\"title\":").append(quote(pd.getTitle()))
+                .append(",\"status\":").append(pd.getStatus())
+                .append(",\"detail\":").append(quote(pd.getDetail()))
+                .append(",\"instance\":").append(quote(String.valueOf(pd.getInstance())))
+                .append(",\"timestamp\":").append(quote(String.valueOf(props.get("timestamp"))))
+                .append(",\"traceId\":").append(quote(String.valueOf(props.get("traceId"))))
+                .append('}');
+        resp.getWriter().write(json.toString());
     }
 
     private static String quote(String s) {
