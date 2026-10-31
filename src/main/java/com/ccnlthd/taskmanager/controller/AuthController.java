@@ -1,5 +1,6 @@
 package com.ccnlthd.taskmanager.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.ccnlthd.taskmanager.config.SecurityConfig;
@@ -56,6 +58,7 @@ public class AuthController {
             if (ProblemSupport.isApi(req)) {
                 throw new BindException(result);
             }
+            res.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             m.addAttribute("error", result.getAllErrors().get(0).getDefaultMessage());
             return "login";
         }
@@ -63,6 +66,9 @@ public class AuthController {
             Authentication auth = authService.login(request, req, res);
             return "redirect:" + SecurityConfig.homeFor(auth);
         } catch (IllegalArgumentException e) {
+            if (ProblemSupport.isApi(req)) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage(), e);
+            }
             m.addAttribute("error", e.getMessage());
             return "login";
         }

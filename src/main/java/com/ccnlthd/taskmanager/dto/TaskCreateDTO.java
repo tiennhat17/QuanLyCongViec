@@ -3,6 +3,7 @@ package com.ccnlthd.taskmanager.dto;
 
 import java.time.LocalDate;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -15,6 +16,7 @@ public class TaskCreateDTO {
 
     private Long id;
 
+    @NotBlank(message = "Tiêu đề không được để trống")
     @Size(
         min = 2,
         max = 200,

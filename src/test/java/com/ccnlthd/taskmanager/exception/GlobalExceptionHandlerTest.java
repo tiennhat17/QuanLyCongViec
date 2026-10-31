@@ -53,7 +53,8 @@ class GlobalExceptionHandlerTest {
         mvc.perform(get("/api/bad")).andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.status").value(400)).andExpect(jsonPath("$.detail").value("sai"))
-                .andExpect(jsonPath("$.traceId").exists());
+                .andExpect(jsonPath("$.traceId").exists())
+                .andExpect(jsonPath("$.type").doesNotExist());
     }
 
     @Test

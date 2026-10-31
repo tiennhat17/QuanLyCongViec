@@ -20,6 +20,7 @@ import com.ccnlthd.taskmanager.service.TaskService;
 import com.ccnlthd.taskmanager.service.UserService;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -41,6 +42,7 @@ public class CategoryController {
             BindingResult result,
             Authentication authentication,
             HttpServletRequest request,
+            HttpServletResponse response,
             Model model) throws BindException {
 
         // Bean Validation thất bại
@@ -48,6 +50,7 @@ public class CategoryController {
             if (ProblemSupport.isApi(request)) {
                 throw new BindException(result);
             }
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             model.addAttribute("openCatModal", true);
             model.addAttribute("taskForm", new TaskCreateDTO());
 
